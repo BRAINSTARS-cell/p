@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>PH LIFE</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  -webkit-user-select:none;
+  user-select:none;
+}
+
+html,body{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#07100d;
+  font-family:Arial,sans-serif;
+  touch-action:none;
+}
+
+#game{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  background:#17251c;
+}
+
+canvas{
+  display:block;
+  width:100%;
+  height:100%;
+}
+
+/* HUD */
+
+#hud{
+  position:fixed;
+  top:12px;
+  left:12px;
+  right:12px;
+  display:flex;
+  justify-content:space-between;
+  pointer-events:none;
+}
+
+.card{
+  background:rgba(0,0,0,.68);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:15px;
+  padding:9px 12px;
+  color:white;
+  backdrop-filter:blur(8px);
+  box-shadow:0 5px 20px #0008;
+}
+
+#playerName{
+  font-weight:bold;
+  font-size:15px;
+}
+
+.stat{
+  font-size:12px;
+  margin-top:4px;
+}
+
+.money{
+  color:#63ff91;
+  font-weight:bold;
+}
+
+#mission{
+  position:fixed;
+  top:82px;
+  left:50%;
+  transform:translateX(-50%);
+  width:min(88%,380px);
+  background:rgba(0,0,0,.7);
+  color:white;
+  padding:10px 14px;
+  border-radius:14px;
+  text-align:center;
+  font-size:13px;
+  border:1px solid #ffffff20;
+}
+
+/* JOYSTICK */
+
+#joystick{
+  position:fixed;
+  left:22px;
+  bottom:25px;
+  width:130px;
+  height:130px;
+  border-radius:50%;
+  background:rgba(255,255,255,.10);
+  border:2px solid rgba(255,255,255,.18);
+  box-shadow:inset 0 0 25px #0007;
+}
+
+#stick{
+  position:absolute;
+  width:58px;
+  height:58px;
+  left:34px;
+  top:34px;
+  border-radius:50%;
+  background:rgba(255,255,255,.35);
+  border:2px solid #fff8;
+  box-shadow:0 5px 20px #0008;
+}
+
+/* ACTION BUTTONS */
+
+#buttons{
+  position:fixed;
+  right:20px;
+  bottom:25px;
+  display:grid;
+  grid-template-columns:70px 70px;
+  gap:10px;
+}
+
+.action{
+  width:70px;
+  height:70px;
+  border:none;
+  border-radius:50%;
+  background:rgba(0,0,0,.67);
+  color:white;
+  border:2px solid rgba(255,255,255,.18);
+  font-weight:bold;
+  font-size:12px;
+  box-shadow:0 6px 20px #0008;
+}
+
+.action:active{
+  transform:scale(.9);
+  background:#17b957;
+}
+
+/* MAP BUTTON */
+
+#mapBtn{
+  position:fixed;
+  right:20px;
+  top:15px;
+  width:48px;
+  height:48px;
+  border-radius:50%;
+  border:1px solid #ffffff30;
+  background:#000b;
+  color:white;
+  font-size:21px;
+}
+
+/* NOTIFICATION */
+
+#toast{
+  position:fixed;
+  left:50%;
+  bottom:180px;
+  transform:translateX(-50%) scale(.8);
+  opacity:0;
+  color:white;
+  background:#111e;
+  padding:12px 20px;
+  border-radius:14px;
+  transition:.25s;
+  pointer-events:none;
+  z-index:20;
+}
+
+#toast.show{
+  opacity:1;
+  transform:translateX(-50%) scale(1);
+}
+
+/* MAP */
+
+#mapScreen{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#07100df5;
+  color:white;
+  z-index:30;
+  padding:25px;
+}
+
+#mapScreen h1{
+  margin-bottom:20px;
+}
+
+.location{
+  padding:16px;
+  margin:9px 0;
+  border-radius:14px;
+  background:#ffffff12;
+  border:1px solid #ffffff18;
+}
+
+#closeMap{
+  position:absolute;
+  top:18px;
+  right:20px;
+  background:#ffffff15;
+  color:white;
+  border:0;
+  border-radius:12px;
+  padding:10px 15px;
+}
+
+/* PHONE */
+
+#phone{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:35;
+  background:#080b0a;
+  color:white;
+  padding:25px;
+}
+
+#phone h1{
+  margin-top:30px;
+}
+
+.phoneApp{
+  display:inline-flex;
+  width:90px;
+  height:90px;
+  margin:10px;
+  background:#ffffff10;
+  border-radius:20px;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  border:1px solid #ffffff15;
+}
+
+#closePhone{
+  position:absolute;
+  right:20px;
+  top:20px;
+  padding:10px 15px;
+  border:0;
+  border-radius:10px;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud">
+
+  <div class="card">
+    <div id="playerName">XMAN</div>
+    <div class="stat">💰 <span class="money" id="money">₦5,000</span></div>
+    <div class="stat">⭐ REP <span id="rep">0</span></div>
+  </div>
+
+  <div class="card">
+    <div>❤️ <span id="health">100</span></div>
+    <div class="stat">⚡ <span id="energy">100</span></div>
+    <div class="stat">🚗 <span id="carStatus">ON FOOT</span></div>
+  </div>
+
+</div>
+
+<div id="mission">
+  📍 Mission: Explore Port Harcourt
+</div>
+
+<button id="mapBtn">🗺️</button>
+
+<div id="joystick">
+  <div id="stick"></div>
+</div>
+
+<div id="buttons">
+  <button class="action" id="actionBtn">ACTION</button>
+  <button class="action" id="carBtn">🚗 CAR</button>
+  <button class="action" id="phoneBtn">📱 PHONE</button>
+  <button class="action" id="runBtn">🏃 RUN</button>
+</div>
+
+<div id="toast"></div>
+
+<div id="mapScreen">
+  <button id="closeMap">✕</button>
+
+  <h1>🗺️ PH LIFE MAP</h1>
+
+  <div class="location">🏘️ Choba</div>
+  <div class="location">🏙️ GRA</div>
+  <div class="location">🏢 Trans Amadi</div>
+  <div class="location">🚦 Rumuokoro</div>
+  <div class="location">🏪 Mile 1</div>
+  <div class="location">🏠 Rumuola</div>
+  <div class="location">🌆 Woji</div>
+</div>
+
+<div id="phone">
+
+  <button id="closePhone">✕</button>
+
+  <h1>📱 PH PHONE</h1>
+  <p style="margin-top:8px;color:#aaa">
+    Your Port Harcourt life in your pocket.
+  </p>
+
+  <div style="margin-top:30px">
+
+    <div class="phoneApp" onclick="showToast('📍 GPS coming soon')">
+      🗺️
+      <small>GPS</small>
+    </div>
+
+    <div class="phoneApp" onclick="showToast('💼 Job board opened')">
+      💼
+      <small>Jobs</small>
+    </div>
+
+    <div class="phoneApp" onclick="showToast('🏦 Bank balance: ₦'+money.toLocaleString())">
+      🏦
+      <small>Bank</small>
+    </div>
+
+    <div class="phoneApp" onclick="showToast('🚕 Taxi service coming soon')">
+      🚕
+      <small>Taxi</small>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+/* =========================
+   PH LIFE ENGINE
+========================= */
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let W,H;
+
+function resize(){
+  W=canvas.width=window.innerWidth;
+  H=canvas.height=window.innerHeight;
+}
+
+window.addEventListener("resize",resize);
+resize();
+
+
+/* =========================
+   GAME STATE
+========================= */
+
+let money = Number(localStorage.getItem("phMoney")) || 5000;
+let rep = Number(localStorage.getItem("phRep")) || 0;
+
+let player={
+  x:700,
+  y:500,
+  size:18,
+  speed:2.5,
+  health:100,
+  energy:100,
+  inCar:false,
+  angle:0
+};
+
+let camera={
+  x:0,
+  y:0
+};
+
+
+/* =========================
+   WORLD
+========================= */
+
+const world={
+  width:2400,
+  height:1800
+};
+
+const roads=[
+  {x:0,y:380,w:2400,h:150},
+  {x:0,y:980,w:2400,h:150},
+  {x:520,y:0,w:150,h:1800},
+  {x:1500,y:0,w:150,h:1800}
+];
+
+const buildings=[
+  {x:80,y:80,w:330,h:230,name:"CHOBA PLAZA"},
+  {x:750,y:80,w:350,h:230,name:"PH MALL"},
+  {x:1750,y:80,w:450,h:230,name:"GRA ESTATE"},
+
+  {x:80,y:650,w:300,h:230,name:"MARKET"},
+  {x:760,y:650,w:300,h:230,name:"HOTEL"},
+  {x:1770,y:650,w:380,h:230,name:"BANK"},
+
+  {x:80,y:1250,w:350,h:300,name:"RUMUOKORO SHOP"},
+  {x:750,y:1250,w:350,h:300,name:"GARAGE"},
+  {x:1770,y:1250,w:400,h:300,name:"TRANS AMADI FACTORY"}
+];
+
+
+/* =========================
+   CAR
+========================= */
+
+let car={
+  x:820,
+  y:455,
+  w:48,
+  h:27,
+  speed:5
+};
+
+
+/* =========================
+   NPCs
+========================= */
+
+let npcs=[];
+
+for(let i=0;i<25;i++){
+
+  npcs.push({
+    x:100+Math.random()*2200,
+    y:100+Math.random()*1600,
+    dx:(Math.random()-.5)*.5,
+    dy:(Math.random()-.5)*.5
+  });
+
+}
+
+
+/* =========================
+   JOYSTICK
+========================= */
+
+let joy={
+  active:false,
+  dx:0,
+  dy:0
+};
+
+const joystick=document.getElementById("joystick");
+const stick=document.getElementById("stick");
+
+function joystickMove(x,y){
+
+  const r=joystick.getBoundingClientRect();
+
+  let cx=r.left+r.width/2;
+  let cy=r.top+r.height/2;
+
+  let dx=x-cx;
+  let dy=y-cy;
+
+  let distance=Math.sqrt(dx*dx+dy*dy);
+  let max=48;
+
+  if(distance>max){
+    dx=dx/distance*max;
+    dy=dy/distance*max;
+  }
+
+  joy.dx=dx/max;
+  joy.dy=dy/max;
+
+  stick.style.transform=
+    `translate(${dx}px,${dy}px)`;
+}
+
+function joystickEnd(){
+
+  joy.active=false;
+  joy.dx=0;
+  joy.dy=0;
+
+  stick.style.transform="translate(0,0)";
+}
+
+joystick.addEventListener("touchstart",e=>{
+  joy.active=true;
+  joystickMove(
+    e.touches[0].clientX,
+    e.touches[0].clientY
+  );
+});
+
+joystick.addEventListener("touchmove",e=>{
+  if(joy.active){
+    joystickMove(
+      e.touches[0].clientX,
+      e.touches[0].clientY
+    );
+  }
+});
+
+joystick.addEventListener("touchend",joystickEnd);
+
+
+/* =========================
+   KEYBOARD
+========================= */
+
+let keys={};
+
+window.addEventListener("keydown",e=>{
+  keys[e.key.toLowerCase()]=true;
+});
+
+window.addEventListener("keyup",e=>{
+  keys[e.key.toLowerCase()]=false;
+});
+
+
+/* =========================
+   MOVEMENT
+========================= */
+
+function updatePlayer(){
+
+  let dx=joy.dx;
+  let dy=joy.dy;
+
+  if(keys.w || keys.arrowup)dy=-1;
+  if(keys.s || keys.arrowdown)dy=1;
+  if(keys.a || keys.arrowleft)dx=-1;
+  if(keys.d || keys.arrowright)dx=1;
+
+  let moving=dx!==0 || dy!==0;
+
+  if(moving){
+
+    let length=Math.sqrt(dx*dx+dy*dy);
+
+    dx/=length;
+    dy/=length;
+
+    let speed=player.speed;
+
+    if(player.inCar){
+      speed=car.speed;
+    }
+
+    player.x+=dx*speed;
+    player.y+=dy*speed;
+
+    player.angle=Math.atan2(dy,dx);
+
+    if(!player.inCar){
+      player.energy-=0.025;
+    }
+
+  }
+
+  player.x=Math.max(20,Math.min(world.width-20,player.x));
+  player.y=Math.max(20,Math.min(world.height-20,player.y));
+
+  if(player.energy<0)player.energy=0;
+
+}
+
+
+/* =========================
+   CAMERA
+========================= */
+
+function updateCamera(){
+
+  camera.x=player.x-W/2;
+  camera.y=player.y-H/2;
+
+  camera.x=Math.max(0,
+    Math.min(world.width-W,camera.x));
+
+  camera.y=Math.max(0,
+    Math.min(world.height-H,camera.y));
+}
+
+
+/* =========================
+   DRAW WORLD
+========================= */
+
+function drawWorld(){
+
+  ctx.fillStyle="#284a31";
+  ctx.fillRect(0,0,W,H);
+
+  ctx.save();
+
+  ctx.translate(-camera.x,-camera.y);
+
+  /* grass */
+
+  ctx.fillStyle="#315d38";
+  ctx.fillRect(
+    0,0,
+    world.width,
+    world.height
+  );
+
+  /* roads */
+
+  for(const r of roads){
+
+    ctx.fillStyle="#303536";
+
+    ctx.fillRect(
+      r.x,r.y,r.w,r.h
+    );
+
+    ctx.strokeStyle="#d4b84b";
+    ctx.lineWidth=3;
+    ctx.setLineDash([30,30]);
+
+    if(r.w>r.h){
+
+      ctx.beginPath();
+      ctx.moveTo(r.x,r.y+r.h/2);
+      ctx.lineTo(r.x+r.w,r.y+r.h/2);
+      ctx.stroke();
+
+    }else{
+
+      ctx.beginPath();
+      ctx.moveTo(r.x+r.w/2,r.y);
+      ctx.lineTo(r.x+r.w/2,r.y+r.h);
+      ctx.stroke();
+
+    }
+
+    ctx.setLineDash([]);
+
+  }
+
+
+  /* buildings */
+
+  for(const b of buildings){
+
+    ctx.fillStyle="#18251d";
+    ctx.fillRect(
+      b.x,b.y,b.w,b.h
+    );
+
+    ctx.strokeStyle="#73a17b";
+    ctx.lineWidth=4;
+    ctx.strokeRect(
+      b.x,b.y,b.w,b.h
+    );
+
+    ctx.fillStyle="#ffffff";
+    ctx.font="bold 18px Arial";
+    ctx.fillText(
+      b.name,
+      b.x+15,
+      b.y+35
+    );
+
+  }
+
+
+  /* NPCs */
+
+  for(const n of npcs){
+
+    n.x+=n.dx;
+    n.y+=n.dy;
+
+    if(n.x<20||n.x>world.width-20)n.dx*=-1;
+    if(n.y<20||n.y>world.height-20)n.dy*=-1;
+
+    ctx.fillStyle="#e3a66b";
+
+    ctx.beginPath();
+    ctx.arc(n.x,n.y,9,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle="#1d2731";
+    ctx.fillRect(n.x-7,n.y+8,14,14);
+
+  }
+
+
+  /* CAR */
+
+  ctx.save();
+
+  ctx.translate(car.x,car.y);
+
+  ctx.rotate(
+    player.inCar ? player.angle : 0
+  );
+
+  ctx.fillStyle="#e44b35";
+
+  ctx.fillRect(
+    -car.w/2,
+    -car.h/2,
+    car.w,
+    car.h
+  );
+
+  ctx.fillStyle="#8fd5ff";
+
+  ctx.fillRect(
+    -10,-10,
+    20,20
+  );
+
+  ctx.restore();
+
+
+  /* PLAYER */
+
+  if(!player.inCar){
+
+    ctx.save();
+
+    ctx.translate(player.x,player.y);
+    ctx.rotate(player.angle);
+
+    ctx.fillStyle="#f1b57d";
+
+    ctx.beginPath();
+    ctx.arc(0,-12,8,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle="#1476ff";
+
+    ctx.fillRect(
+      -8,-5,
+      16,24
+    );
+
+    ctx.fillStyle="#111";
+
+    ctx.fillRect(
+      -9,17,
+      7,10
+    );
+
+    ctx.fillRect(
+      2,17,
+      7,10
+    );
+
+    ctx.restore();
+
+  }
+
+
+  /* location signs */
+
+  ctx.fillStyle="#fff";
+
+  ctx.font="bold 26px Arial";
+
+  ctx.fillText(
+    "CHOBA",
+    130,360
+  );
+
+  ctx.fillText(
+    "GRA",
+    1900,360
+  );
+
+  ctx.fillText(
+    "RUMUOKORO",
+    100,1200
+  );
+
+  ctx.fillText(
+    "TRANS AMADI",
+    1750,1200
+  );
+
+  ctx.restore();
+
+}
+
+
+/* =========================
+   ACTION
+========================= */
+
+function action(){
+
+  let distance=Math.hypot(
+    player.x-car.x,
+    player.y-car.y
+  );
+
+  if(!player.inCar && distance<80){
+
+    player.inCar=true;
+
+    showToast("🚗 You entered the car");
+
+    document.getElementById("carStatus").textContent="DRIVING";
+
+    return;
+  }
+
+  if(player.inCar){
+
+    player.inCar=false;
+
+    car.x=player.x+45;
+    car.y=player.y;
+
+    showToast("🚶 You left the car");
+
+    document.getElementById("carStatus").textContent="ON FOOT";
+
+    return;
+  }
+
+  /* job interaction */
+
+  let jobDistance=Math.hypot(
+    player.x-230,
+    player.y-760
+  );
+
+  if(jobDistance<100){
+
+    money+=1000;
+    rep+=5;
+
+    save();
+
+    showToast("💼 Job completed! +₦1,000");
+
+    document.getElementById("mission").textContent=
+      "✅ Mission complete! Find another job.";
+
+    return;
+  }
+
+  showToast("Nothing to interact with here.");
+
+}
+
+
+/* =========================
+   RUN
+========================= */
+
+let running=false;
+
+document.getElementById("runBtn")
+.addEventListener("touchstart",()=>{
+  running=true;
+});
+
+document.getElementById("runBtn")
+.addEventListener("touchend",()=>{
+  running=false;
+});
+
+setInterval(()=>{
+
+  if(running && player.energy>1){
+
+    player.speed=4.2;
+
+  }else{
+
+    player.speed=2.5;
+
+  }
+
+},50);
+
+
+/* =========================
+   MONEY / SAVE
+========================= */
+
+function save(){
+
+  localStorage.setItem(
+    "phMoney",
+    money
+  );
+
+  localStorage.setItem(
+    "phRep",
+    rep
+  );
+
+  document.getElementById("money")
+    .textContent="₦"+money.toLocaleString();
+
+  document.getElementById("rep")
+    .textContent=rep;
+
+}
+
+save();
+
+
+/* =========================
+   TOAST
+========================= */
+
+let toastTimer;
+
+function showToast(message){
+
+  const toast=document.getElementById("toast");
+
+  toast.textContent=message;
+  toast.classList.add("show");
+
+  clearTimeout(toastTimer);
+
+  toastTimer=setTimeout(()=>{
+    toast.classList.remove("show");
+  },2200);
+
+}
+
+
+/* =========================
+   BUTTONS
+========================= */
+
+document.getElementById("actionBtn")
+.addEventListener("click",action);
+
+document.getElementById("carBtn")
+.addEventListener("click",action);
+
+
+document.getElementById("mapBtn")
+.addEventListener("click",()=>{
+
+  document.getElementById("mapScreen")
+    .style.display="block";
+
+});
+
+document.getElementById("closeMap")
+.addEventListener("click",()=>{
+
+  document.getElementById("mapScreen")
+    .style.display="none";
+
+});
+
+
+document.getElementById("phoneBtn")
+.addEventListener("click",()=>{
+
+  document.getElementById("phone")
+    .style.display="block";
+
+});
+
+document.getElementById("closePhone")
+.addEventListener("click",()=>{
+
+  document.getElementById("phone")
+    .style.display="none";
+
+});
+
+
+/* =========================
+   GAME LOOP
+========================= */
+
+function gameLoop(){
+
+  updatePlayer();
+  updateCamera();
+
+  drawWorld();
+
+  document.getElementById("health")
+    .textContent=Math.round(player.health);
+
+  document.getElementById("energy")
+    .textContent=Math.round(player.energy);
+
+  requestAnimationFrame(gameLoop);
+
+}
+
+gameLoop();
+
+
+/* =========================
+   START
+========================= */
+
+setTimeout(()=>{
+
+  showToast("🇳🇬 Welcome to PH LIFE!");
+
+},700);
+
+</script>
+
+</body>
+</html>
